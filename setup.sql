@@ -46,7 +46,7 @@ CREATE TABLE RestaurantTable (
     table_number    INTEGER NOT NULL,
     capacity        INTEGER NOT NULL,
     section         TEXT    NOT NULL
-        CHECK (section IN ('patio', 'main floor', 'bar'))
+        CHECK (section IN ('main tables', 'standing tables', 'bar'))
 );
 
 -- ------------------------------------------------------------
@@ -144,7 +144,7 @@ CREATE TABLE Payment (
 );
 
 -- ------------------------------------------------------------
--- 9. REVIEW (1:1 with Reservation, partial participation)
+-- 9. REVIEW (1:1 with Reservation, partial particimain tablesn)
 -- ------------------------------------------------------------
 CREATE TABLE Review (
     review_id       INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -169,11 +169,11 @@ INSERT INTO Customer (first_name, last_name, phone, email) VALUES
 
 -- Tables
 INSERT INTO RestaurantTable (table_number, capacity, section) VALUES
-(1, 2, 'patio'),
-(2, 4, 'main floor'),
-(3, 4, 'main floor'),
+(1, 2, 'main tables'),
+(2, 4, 'standing tables'),
+(3, 4, 'standing tables'),
 (4, 6, 'bar'),
-(5, 2, 'patio');
+(5, 2, 'main tables');
 
 -- Slots (two days: today and tomorrow, a few time windows each)
 INSERT INTO Slot (table_id, slot_date, start_time, end_time, status) VALUES
