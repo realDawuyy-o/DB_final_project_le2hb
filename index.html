@@ -62,7 +62,7 @@
         </section>
       </section>
 
-      <section class="secondary-layout" aria-label="Your bookings and query log">
+      <section class="secondary-layout" aria-label="Your bookings and menu">
         <section class="scheduled-panel">
           <div class="board-heading">
             <div>
@@ -75,15 +75,27 @@
           </ul>
         </section>
 
-        <section class="query-panel">
+        <section class="menu-panel">
           <div class="board-heading">
             <div>
-              <p class="panel-label">Live activity</p>
-              <h2>Query log</h2>
+              <p class="panel-label">Order ahead</p>
+              <h2>Menu &amp; payment</h2>
             </div>
           </div>
-          <ul id="query-log" class="query-log" aria-live="polite"></ul>
+          <div id="day-tabs" class="day-tabs"></div>
+          <p id="menu-status" class="menu-status">Pick a day to preview its menu.</p>
+          <div id="menu-order-container"></div>
         </section>
+      </section>
+
+      <section class="query-panel-wide" aria-label="Live query activity">
+        <div class="board-heading">
+          <div>
+            <p class="panel-label">Live activity</p>
+            <h2>Query log</h2>
+          </div>
+        </div>
+        <ul id="query-log" class="query-log" aria-live="polite"></ul>
       </section>
     </main>
 
