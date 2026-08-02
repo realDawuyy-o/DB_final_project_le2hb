@@ -1,1 +1,0 @@
-{"stmt":"INSERT INTO employees (id, name, department, salary) VALUES\n(1, 'Alice', 'Engineering', 85000),\n(2, 'Bob', 'Marketing', 62000),\n(3, 'Charlie', 'Engineering', 95000),\n(4, 'Diana', 'Sales', 58000),\n(5, 'Evan', 'Marketing', 67000);","header":[],"rows":[]}
