@@ -11,10 +11,12 @@ const queryLog = document.querySelector("#query-log");
 const dayTabs = document.querySelector("#day-tabs");
 const menuStatus = document.querySelector("#menu-status");
 const menuOrderContainer = document.querySelector("#menu-order-container");
+const returnToMenuButton = document.querySelector("#return-to-menu-button");
 
 const QUERY_LOG_LIMIT = 30;
-let activeOrderSlotId = null;
+let activeOrderSlotId = null; // scheduled slot currently open in the menu panel
 let activeDay = null;
+let menuView = "browse"; // "browse" | "order" | "details"
 let boardState = null;
 
 function renderBoard(state) {
@@ -72,6 +74,7 @@ function renderBoard(state) {
 
   if (activeOrderSlotId && !state.slots.some((slot) => slot.id === activeOrderSlotId && slot.state === "scheduled")) {
     activeOrderSlotId = null;
+    menuView = "browse";
   }
 
   renderScheduledList(state);
@@ -91,6 +94,9 @@ function renderScheduledList(state) {
   }
 
   for (const slot of scheduledSlots) {
+    const order = (state.orders && state.orders[slot.id]) || null;
+    const isPaid = Boolean(order && order.paid);
+
     const item = document.createElement("li");
     item.className = `scheduled-item${slot.id === activeOrderSlotId ? " is-active" : ""}`;
 
@@ -98,29 +104,74 @@ function renderScheduledList(state) {
     row.className = "scheduled-row";
 
     const label = document.createElement("span");
-    label.textContent = `${slot.day} at ${slot.time}`;
+    label.className = "scheduled-label";
+    if (isPaid) {
+      const icon = document.createElement("span");
+      icon.className = "paid-icon";
+      icon.textContent = "\u{1F4B0}";
+      icon.setAttribute("aria-label", "Paid");
+      label.append(icon);
+    }
+    label.append(document.createTextNode(`${slot.day} at ${slot.time}`));
 
     const actions = document.createElement("div");
     actions.className = "scheduled-actions";
 
-    const menuButton = document.createElement("button");
-    menuButton.type = "button";
-    menuButton.className = "menu-toggle-button";
-    menuButton.textContent = slot.id === activeOrderSlotId ? "Viewing" : "Menu";
-    menuButton.addEventListener("click", () => {
-      activeOrderSlotId = slot.id;
-      activeDay = slot.day;
-      renderScheduledList(boardState);
-      renderMenuPanel(boardState);
-    });
+    // Paid slots get a read-only receipt + cancel; unpaid ones get the editable order view.
+    if (isPaid) {
+      const detailsButton = document.createElement("button");
+      detailsButton.type = "button";
+      detailsButton.className = "menu-toggle-button";
+      const isViewingDetails = slot.id === activeOrderSlotId && menuView === "details";
+      detailsButton.textContent = isViewingDetails ? "Viewing" : "Details";
+      detailsButton.addEventListener("click", () => {
+        if (isViewingDetails) {
+          activeOrderSlotId = null;
+          menuView = "browse";
+        } else {
+          activeOrderSlotId = slot.id;
+          activeDay = slot.day;
+          menuView = "details";
+        }
+        renderScheduledList(boardState);
+        renderMenuPanel(boardState);
+      });
 
-    const removeButton = document.createElement("button");
-    removeButton.type = "button";
-    removeButton.className = "remove-button";
-    removeButton.textContent = "Remove";
-    removeButton.addEventListener("click", () => socket.emit("slot:remove", slot.id));
+      const cancelButton = document.createElement("button");
+      cancelButton.type = "button";
+      cancelButton.className = "remove-button";
+      cancelButton.textContent = "Cancel";
+      cancelButton.addEventListener("click", () => socket.emit("slot:remove", slot.id));
 
-    actions.append(menuButton, removeButton);
+      actions.append(detailsButton, cancelButton);
+    } else {
+      const menuButton = document.createElement("button");
+      menuButton.type = "button";
+      menuButton.className = "menu-toggle-button";
+      const isViewing = slot.id === activeOrderSlotId && menuView === "order";
+      menuButton.textContent = isViewing ? "Viewing" : "Order";
+      menuButton.addEventListener("click", () => {
+        if (isViewing) {
+          activeOrderSlotId = null;
+          menuView = "browse";
+        } else {
+          activeOrderSlotId = slot.id;
+          activeDay = slot.day;
+          menuView = "order";
+        }
+        renderScheduledList(boardState);
+        renderMenuPanel(boardState);
+      });
+
+      const removeButton = document.createElement("button");
+      removeButton.type = "button";
+      removeButton.className = "remove-button";
+      removeButton.textContent = "Remove";
+      removeButton.addEventListener("click", () => socket.emit("slot:remove", slot.id));
+
+      actions.append(menuButton, removeButton);
+    }
+
     row.append(label, actions);
     item.append(row);
     scheduledList.append(item);
@@ -137,10 +188,6 @@ function renderDayTabs(state) {
     tab.textContent = day;
     tab.addEventListener("click", () => {
       activeDay = day;
-      const matchingSlot = state.slots.find(
-        (slot) => slot.state === "scheduled" && slot.day === day
-      );
-      activeOrderSlotId = matchingSlot ? matchingSlot.id : null;
       renderScheduledList(boardState);
       renderMenuPanel(boardState);
     });
@@ -149,20 +196,35 @@ function renderDayTabs(state) {
 }
 
 function renderMenuPanel(state) {
-  renderDayTabs(state);
-
   const activeSlot = state.slots.find(
     (slot) => slot.id === activeOrderSlotId && slot.state === "scheduled"
   );
 
   menuOrderContainer.replaceChildren();
 
-  if (activeSlot && activeSlot.day === activeDay) {
+  // Editable checklist + pay button for an unpaid order.
+  if (menuView === "order" && activeSlot) {
+    dayTabs.hidden = true;
+    returnToMenuButton.hidden = false;
     menuStatus.textContent = `Ordering for ${activeSlot.day} at ${activeSlot.time}`;
     menuOrderContainer.append(renderOrderPanel(state, activeSlot));
     return;
   }
 
+  // Read-only receipt for an order that has already been paid.
+  if (menuView === "details" && activeSlot) {
+    dayTabs.hidden = true;
+    returnToMenuButton.hidden = false;
+    menuStatus.textContent = `Receipt for ${activeSlot.day} at ${activeSlot.time}`;
+    menuOrderContainer.append(renderReceiptPanel(state, activeSlot));
+    return;
+  }
+
+  // Default view: day tabs + a preview of that day's menu.
+  menuView = "browse";
+  dayTabs.hidden = false;
+  returnToMenuButton.hidden = true;
+  renderDayTabs(state);
   menuStatus.textContent = `Previewing ${activeDay}'s menu -- select a scheduled ${activeDay} slot to order.`;
   menuOrderContainer.append(renderMenuPreview(state, activeDay));
 }
@@ -283,6 +345,59 @@ function renderOrderPanel(state, slot) {
   return panel;
 }
 
+function renderReceiptPanel(state, slot) {
+  const panel = document.createElement("div");
+  panel.className = "order-panel receipt-panel";
+
+  const menu = (state.menu && state.menu[slot.day]) || [];
+  const order = (state.orders && state.orders[slot.id]) || { items: {}, total: 0 };
+
+  const checklist = document.createElement("ul");
+  checklist.className = "order-checklist";
+
+  const orderedDishes = menu.filter((dish) => (order.items[dish.id] || 0) > 0);
+
+  if (orderedDishes.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "receipt-empty";
+    empty.textContent = "No items were ordered.";
+    checklist.append(empty);
+  }
+
+  for (const dish of orderedDishes) {
+    const quantity = order.items[dish.id];
+    const row = document.createElement("li");
+    row.className = "order-row receipt-row";
+
+    const dishName = document.createElement("span");
+    dishName.className = "dish-name";
+    dishName.textContent = `${quantity} \u00d7 ${dish.name}`;
+
+    const dishPrice = document.createElement("span");
+    dishPrice.className = "dish-price";
+    dishPrice.textContent = `$${(dish.price * quantity).toFixed(2)}`;
+
+    row.append(dishName, dishPrice);
+    checklist.append(row);
+  }
+
+  const footer = document.createElement("div");
+  footer.className = "order-footer";
+
+  const moneyCounter = document.createElement("span");
+  moneyCounter.className = "money-counter";
+  moneyCounter.textContent = `Total paid: $${order.total.toFixed(2)}`;
+
+  const paidBadge = document.createElement("span");
+  paidBadge.className = "paid-badge";
+  paidBadge.textContent = "\u{1F4B0} Paid";
+
+  footer.append(moneyCounter, paidBadge);
+  panel.append(checklist, footer);
+
+  return panel;
+}
+
 function appendQueryLog(entry) {
   const item = document.createElement("li");
   const time = new Date(entry.timestamp).toLocaleTimeString();
@@ -311,10 +426,10 @@ function updateCountdown() {
   countdownValue.textContent = `${(remaining / 1000).toFixed(1)}s`;
 }
 
-function showPaymentToast({ day, time, total }) {
+function showToast(text) {
   const toast = document.createElement("div");
   toast.className = "payment-toast";
-  toast.textContent = `Payment successful! $${total.toFixed(2)} charged for ${day} at ${time}.`;
+  toast.textContent = text;
   document.body.append(toast);
   setTimeout(() => toast.classList.add("is-visible"), 10);
   setTimeout(() => {
@@ -323,10 +438,19 @@ function showPaymentToast({ day, time, total }) {
   }, 2600);
 }
 
+function showPaymentToast({ day, time, total }) {
+  showToast(`Payment successful! $${total.toFixed(2)} charged for ${day} at ${time}.`);
+}
+
+function showRefundToast({ day, time, total }) {
+  showToast(`Cancelled and refunded $${total.toFixed(2)} for ${day} at ${time}.`);
+}
+
 socket.on("board:update", renderBoard);
 socket.on("query:log", appendQueryLog);
 socket.on("query:log:init", (entries) => entries.forEach(appendQueryLog));
 socket.on("order:paid", showPaymentToast);
+socket.on("order:refunded", showRefundToast);
 
 socket.on("connect", () => {
   connectionState.textContent = "Live";
@@ -340,4 +464,10 @@ socket.on("disconnect", () => {
 });
 
 scheduleButton.addEventListener("click", () => socket.emit("slot:schedule"));
+returnToMenuButton.addEventListener("click", () => {
+  activeOrderSlotId = null;
+  menuView = "browse";
+  renderScheduledList(boardState);
+  renderMenuPanel(boardState);
+});
 setInterval(updateCountdown, 100);

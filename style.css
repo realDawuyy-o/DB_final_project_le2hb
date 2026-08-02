@@ -365,6 +365,17 @@ h1 {
   gap: 10px;
 }
 
+.scheduled-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.paid-icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
 .scheduled-actions {
   display: flex;
   gap: 8px;
@@ -386,6 +397,25 @@ h1 {
 
 .remove-button:hover,
 .menu-toggle-button:hover {
+  background: var(--midnight-violet);
+  color: var(--beige);
+}
+
+.return-to-menu-button {
+  border: 1px solid var(--midnight-violet);
+  background: transparent;
+  color: var(--midnight-violet);
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.return-to-menu-button:hover {
   background: var(--midnight-violet);
   color: var(--beige);
 }
@@ -540,6 +570,24 @@ h1 {
 .pay-button:hover {
   background: var(--golden-apricot);
   transform: translateY(-1px);
+}
+
+.receipt-row {
+  opacity: 0.85;
+}
+
+.receipt-empty {
+  padding: 10px 0;
+  color: var(--olive-wood);
+  font-size: 0.75rem;
+}
+
+.paid-badge {
+  color: var(--midnight-violet);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .payment-toast {

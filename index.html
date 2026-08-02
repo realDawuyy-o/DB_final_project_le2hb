@@ -30,6 +30,7 @@
         </section>
       </header>
 
+      <!-- Slot selection controls + live availability matrix -->
       <section class="game-layout" aria-label="Scheduling game">
         <aside class="game-panel">
           <p class="panel-label">Your move</p>
@@ -62,6 +63,7 @@
         </section>
       </section>
 
+      <!-- Scheduled slots list + menu/order/receipt panel -->
       <section class="secondary-layout" aria-label="Your bookings and menu">
         <section class="scheduled-panel">
           <div class="board-heading">
@@ -75,12 +77,16 @@
           </ul>
         </section>
 
+        <!-- Day tabs + preview shown by default; swapped for the order/receipt view via client.js -->
         <section class="menu-panel">
           <div class="board-heading">
             <div>
               <p class="panel-label">Order ahead</p>
               <h2>Menu &amp; payment</h2>
             </div>
+            <button id="return-to-menu-button" class="return-to-menu-button" type="button" hidden>
+              Return to menu
+            </button>
           </div>
           <div id="day-tabs" class="day-tabs"></div>
           <p id="menu-status" class="menu-status">Pick a day to preview its menu.</p>
@@ -88,6 +94,7 @@
         </section>
       </section>
 
+      <!-- Rolling feed of simulated SQL statements for each board action -->
       <section class="query-panel-wide" aria-label="Live query activity">
         <div class="board-heading">
           <div>
